@@ -35,19 +35,6 @@ namespace ThinFilmCharacteristicMatrixCalculator.Models
         public DateTime EndTime { get; set; }
         public TimeSpan Duration => EndTime - StartTime;
         
-        // 合併的子項目（用於TreeView綁定）
-        public ObservableCollection<object> CombinedItems 
-        { 
-            get 
-            {
-                var combined = new ObservableCollection<object>();
-                foreach (var result in Results)
-                    combined.Add(result);
-                foreach (var subStep in SubSteps)
-                    combined.Add(subStep);
-                return combined;
-            } 
-        }
         
         // 添加子步驟
         public void AddSubStep(CalculationStep subStep)

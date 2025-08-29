@@ -16,6 +16,7 @@ namespace ThinFilmCharacteristicMatrixCalculator
         {
             InitializeComponent();
             InitializeDefaultValues();
+            InitializeViewModeHandlers();
         }
 
         private void InitializeDefaultValues()
@@ -28,6 +29,172 @@ namespace ThinFilmCharacteristicMatrixCalculator
             txtSubstrateIndex.Text = "1.52";
             txtIncidentAngle.Text = "0";
             rbSPolarization.IsChecked = true;
+        }
+
+        private void InitializeViewModeHandlers()
+        {
+            rbSimpleView.Checked += ViewMode_Changed;
+            rbDetailedView.Checked += ViewMode_Changed;
+            rbFormulaView.Checked += ViewMode_Changed;
+            rbChartView.Checked += ViewMode_Changed;
+        }
+
+        private void ViewMode_Changed(object sender, RoutedEventArgs e)
+        {
+            if (sender == rbSimpleView)
+            {
+                SetSimpleView();
+            }
+            else if (sender == rbDetailedView)
+            {
+                SetDetailedView();
+            }
+            else if (sender == rbFormulaView)
+            {
+                SetFormulaView();
+            }
+            else if (sender == rbChartView)
+            {
+                SetChartView();
+            }
+        }
+
+        private void SetSimpleView()
+        {
+            // 簡潔模式：只顯示文字結果，隱藏TreeView
+            treeViewSteps.Visibility = System.Windows.Visibility.Collapsed;
+            txtResults.Visibility = System.Windows.Visibility.Visible;
+            
+            // 只顯示摘要資訊
+            if (currentLogger != null)
+            {
+                var simpleLog = "=== 簡潔模式計算結果 ===\n";
+                simpleLog += $"反射率: {lblReflectance.Content}\n";
+                simpleLog += $"穿透率: {lblTransmittance.Content}\n";
+                simpleLog += $"吸收率: {lblAbsorbance.Content}\n";
+                simpleLog += $"能量守恆: {lblEnergyConserved.Content}\n";
+                txtResults.Text = simpleLog;
+            }
+            
+            txtStatus.Text = "已切換到簡潔模式";
+        }
+
+        private void SetDetailedView()
+        {
+            // 詳細模式：顯示TreeView和完整過程
+            treeViewSteps.Visibility = System.Windows.Visibility.Visible;
+            txtResults.Visibility = System.Windows.Visibility.Collapsed;
+            
+            txtStatus.Text = "已切換到詳細模式";
+        }
+
+        private void SetFormulaView()
+        {
+            // 公式模式：顯示帶有數學公式的文字
+            treeViewSteps.Visibility = System.Windows.Visibility.Collapsed;
+            txtResults.Visibility = System.Windows.Visibility.Visible;
+            
+            if (currentLogger != null)
+            {
+                var formulaLog = "=== 公式模式 - 數學推導 ===\n\n";
+                formulaLog += "特徵矩陣理論:\n";
+                formulaLog += "M = [cos(δ)      i·sin(δ)/η₁]\n";
+                formulaLog += "    [i·η₁·sin(δ)   cos(δ)  ]\n\n";
+                formulaLog += "其中: δ = 2πnd·cos(θ)/λ (相位厚度)\n\n";
+                formulaLog += "反射率公式: R = |(η₀B - C)/(η₀B + C)|²\n";
+                formulaLog += "穿透率公式: T = 4η₀·Re(ηₛ)/|η₀B + C|²\n";
+                formulaLog += "吸收率公式: A = 1 - R - T\n\n";
+                formulaLog += "=== 計算結果 ===\n";
+                formulaLog += $"反射率 R = {lblReflectance.Content}\n";
+                formulaLog += $"穿透率 T = {lblTransmittance.Content}\n";
+                formulaLog += $"吸收率 A = {lblAbsorbance.Content}\n";
+                formulaLog += currentLogger.GetFullLog();
+                txtResults.Text = formulaLog;
+            }
+            
+            txtStatus.Text = "已切換到公式模式";
+        }
+
+        private void SetChartView()
+        {
+            // 圖表模式：顯示視覺化圖表
+            treeViewSteps.Visibility = System.Windows.Visibility.Collapsed;
+            txtResults.Visibility = System.Windows.Visibility.Visible;
+            
+            if (currentLogger != null)
+            {
+                var chartText = CreateASCIIChart();
+                txtResults.Text = chartText;
+            }
+            
+            txtStatus.Text = "已切換到圖表模式";
+        }
+
+        private string CreateASCIIChart()
+        {
+            var chart = "=== 圖表模式 - 視覺化結果 ===\n\n";
+            
+            // 解析當前結果
+            double R = 0, T = 0, A = 0;
+            if (double.TryParse(lblReflectance.Content?.ToString()?.Replace("%", ""), out double r))
+                R = r;
+            if (double.TryParse(lblTransmittance.Content?.ToString()?.Replace("%", ""), out double t))
+                T = t;
+            if (double.TryParse(lblAbsorbance.Content?.ToString()?.Replace("%", ""), out double a))
+                A = a;
+
+            chart += "反射率/穿透率/吸收率 柱狀圖:\n\n";
+            
+            // 創建ASCII柱狀圖
+            int maxWidth = 50;
+            double maxValue = Math.Max(R, Math.Max(T, A));
+            if (maxValue > 0)
+            {
+                int rWidth = (int)(R / maxValue * maxWidth);
+                int tWidth = (int)(T / maxValue * maxWidth);
+                int aWidth = (int)(A / maxValue * maxWidth);
+
+                chart += $"反射率 {R:F1}% |{new string('█', rWidth)}{new string('░', maxWidth - rWidth)}|\n";
+                chart += $"穿透率 {T:F1}% |{new string('█', tWidth)}{new string('░', maxWidth - tWidth)}|\n";
+                chart += $"吸收率 {A:F1}% |{new string('█', aWidth)}{new string('░', maxWidth - aWidth)}|\n";
+            }
+            
+            chart += $"\n能量守恆檢驗: {lblEnergyConserved.Content}\n";
+            chart += $"總和: {R + T + A:F1}%\n\n";
+            
+            // 添加薄膜結構圖
+            chart += "薄膜結構示意圖:\n\n";
+            chart += "空氣 → 薄膜 → 基板\n";
+            chart += "  |     |     |\n";
+            chart += "  n₀    n₁    nₛ\n";
+            chart += $"  {txtIncidentIndex.Text}   {txtFilmIndexReal.Text}-i{txtFilmIndexImag.Text}   {txtSubstrateIndex.Text}\n\n";
+            chart += "光線路徑:\n";
+            chart += "入射光 ──→ ╔═══════╗ ──→ 透射光\n";
+            chart += $"   ↗     ║ 薄膜   ║      ↘\n";
+            chart += $"反射光    ║{txtThickness.Text} nm ║     吸收\n";
+            chart += "          ╚═══════╝\n";
+            
+            return chart;
+        }
+
+        private void ApplyCurrentViewMode()
+        {
+            if (rbSimpleView.IsChecked == true)
+            {
+                SetSimpleView();
+            }
+            else if (rbDetailedView.IsChecked == true)
+            {
+                SetDetailedView();
+            }
+            else if (rbFormulaView.IsChecked == true)
+            {
+                SetFormulaView();
+            }
+            else if (rbChartView.IsChecked == true)
+            {
+                SetChartView();
+            }
         }
 
         private void btnCalculate_Click(object sender, RoutedEventArgs e)
@@ -78,6 +245,9 @@ namespace ThinFilmCharacteristicMatrixCalculator
                 
                 progressCalculation.Value = 100;
                 lblCalculationStatus.Content = "計算完成";
+                
+                // 根據當前選擇的模式顯示結果
+                ApplyCurrentViewMode();
                 
                 // 更新狀態列
                 txtStatus.Text = $"計算完成 - R: {result.Reflectance*100:F2}%, T: {result.Transmittance*100:F2}%, A: {result.Absorbance*100:F2}%";
@@ -186,6 +356,9 @@ namespace ThinFilmCharacteristicMatrixCalculator
                 
                 txtResults.Text = currentLogger.GetFullLog();
                 txtResults.ScrollToEnd();
+                
+                // 應用當前視圖模式
+                ApplyCurrentViewMode();
                 
                 txtStatus.Text = "驗證測試完成";
                 

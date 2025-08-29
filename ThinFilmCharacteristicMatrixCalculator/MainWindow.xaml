@@ -183,9 +183,8 @@
                           FontFamily="Consolas" FontSize="11"
                           Background="White"
                           Margin="5">
-                    <TreeView.Resources>
-                        <!-- 計算步驟模板 -->
-                        <HierarchicalDataTemplate DataType="{x:Type models:CalculationStep}" ItemsSource="{Binding CombinedItems}">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding SubSteps}">
                             <StackPanel Orientation="Vertical">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -195,48 +194,46 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     
-                                    <!-- 狀態圖示 -->
+                                    <!-- 狀態圖示（簡化版） -->
                                     <TextBlock Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Center"
-                                              Text="{Binding Status, Converter={StaticResource StatusToIconConverter}}"
-                                              Foreground="{Binding Status, Converter={StaticResource StatusToColorConverter}}"/>
+                                              Text="•" FontWeight="Bold" Foreground="Blue"/>
                                     
                                     <!-- 步驟標題 -->
                                     <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" VerticalAlignment="Center"/>
                                     
-                                    <!-- 進度條 -->
+                                    <!-- 進度條（簡化） -->
                                     <ProgressBar Grid.Column="2" Width="50" Height="10" Value="{Binding Progress}" 
-                                                Margin="10,0,5,0" VerticalAlignment="Center"
-                                                Visibility="{Binding Status, Converter={StaticResource StatusToProgressVisibilityConverter}}"/>
+                                                Margin="10,0,5,0" VerticalAlignment="Center"/>
                                     
                                     <!-- 計算時間 -->
                                     <TextBlock Grid.Column="3" Text="{Binding Duration, StringFormat='{}{0:mm\\:ss\\.fff}'}" 
-                                              FontSize="9" Foreground="Gray" VerticalAlignment="Center"
-                                              Visibility="{Binding Status, Converter={StaticResource StatusToTimeVisibilityConverter}}"/>
+                                              FontSize="9" Foreground="Gray" VerticalAlignment="Center"/>
                                 </Grid>
+                                
+                                <!-- 顯示計算結果 -->
+                                <ItemsControl ItemsSource="{Binding Results}" Margin="20,2,0,2">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,1">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="20"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <TextBlock Grid.Column="0" Text="{Binding Name}" FontFamily="Consolas" 
+                                                          Foreground="DarkBlue" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="=" FontFamily="Consolas" 
+                                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding FormattedValue}" FontFamily="Consolas" 
+                                                          FontWeight="Bold" Foreground="DarkGreen" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </HierarchicalDataTemplate>
-                        
-                        <!-- 計算結果模板 -->
-                        <DataTemplate DataType="{x:Type models:CalculationResult}">
-                            <Grid Margin="20,1,0,1">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="200"/>
-                                    <ColumnDefinition Width="20"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                <TextBlock Grid.Column="0" Text="{Binding Name}" FontFamily="Consolas" 
-                                          Foreground="DarkBlue" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="=" FontFamily="Consolas" 
-                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="{Binding FormattedValue}" FontFamily="Consolas" 
-                                          FontWeight="Bold" Foreground="DarkGreen" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="3" Text="{Binding Unit}" FontFamily="Consolas" 
-                                          FontSize="10" Foreground="Gray" VerticalAlignment="Center" Margin="5,0,0,0"/>
-                            </Grid>
-                        </DataTemplate>
-                    </TreeView.Resources>
+                    </TreeView.ItemTemplate>
                     
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
