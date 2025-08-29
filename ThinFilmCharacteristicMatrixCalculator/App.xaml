@@ -1,0 +1,15 @@
+﻿<Application x:Class="ThinFilmCharacteristicMatrixCalculator.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ThinFilmCharacteristicMatrixCalculator"
+             xmlns:converters="clr-namespace:ThinFilmCharacteristicMatrixCalculator.Converters"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <!-- 狀態轉換器 -->
+        <converters:StatusToIconConverter x:Key="StatusToIconConverter"/>
+        <converters:StatusToColorConverter x:Key="StatusToColorConverter"/>
+        <converters:StatusToProgressVisibilityConverter x:Key="StatusToProgressVisibilityConverter"/>
+        <converters:StatusToTimeVisibilityConverter x:Key="StatusToTimeVisibilityConverter"/>
+        <converters:CalculationResultValueConverter x:Key="CalculationResultValueConverter"/>
+    </Application.Resources>
+</Application>

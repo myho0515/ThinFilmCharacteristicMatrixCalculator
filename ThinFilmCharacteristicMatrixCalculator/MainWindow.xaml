@@ -1,0 +1,267 @@
+﻿<Window x:Class="ThinFilmCharacteristicMatrixCalculator.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ThinFilmCharacteristicMatrixCalculator"
+        xmlns:models="clr-namespace:ThinFilmCharacteristicMatrixCalculator.Models"
+        mc:Ignorable="d"
+        Title="光學薄膜特徵矩陣計算器" Height="700" Width="1400"
+        WindowStartupLocation="CenterScreen"
+        MinWidth="1200" MinHeight="600">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- 左側輸入參數面板 -->
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10">
+                <!-- 輸入參數群組 -->
+                <GroupBox Header="輸入參數" Margin="0,5">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 波長 -->
+                        <Label Grid.Row="0" Grid.Column="0" Content="波長 (nm):" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" x:Name="txtWavelength" Text="550" Margin="5"/>
+
+                        <!-- 厚度 -->
+                        <Label Grid.Row="1" Grid.Column="0" Content="厚度 (nm):" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="txtThickness" Text="99.45" Margin="5"/>
+
+                        <!-- 薄膜折射率 -->
+                        <Label Grid.Row="2" Grid.Column="0" Content="薄膜折射率:" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="5">
+                            <TextBox x:Name="txtFilmIndexReal" Text="2.385" Width="80"/>
+                            <Label Content=" + " VerticalAlignment="Center"/>
+                            <TextBox x:Name="txtFilmIndexImag" Text="0.1" Width="60"/>
+                            <Label Content="i" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- 入射介質折射率 -->
+                        <Label Grid.Row="3" Grid.Column="0" Content="入射介質:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="3" Grid.Column="1" x:Name="txtIncidentIndex" Text="1.0" Margin="5"/>
+
+                        <!-- 基板折射率 -->
+                        <Label Grid.Row="4" Grid.Column="0" Content="基板折射率:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="4" Grid.Column="1" x:Name="txtSubstrateIndex" Text="1.52" Margin="5"/>
+
+                        <!-- 入射角度 -->
+                        <Label Grid.Row="5" Grid.Column="0" Content="入射角度 (°):" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="5" Grid.Column="1" x:Name="txtIncidentAngle" Text="0" Margin="5"/>
+
+                        <!-- 偏振類型 -->
+                        <Label Grid.Row="6" Grid.Column="0" Content="偏振類型:" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" Margin="5">
+                            <RadioButton x:Name="rbSPolarization" Content="S偏振" IsChecked="True" Margin="0,0,20,0"/>
+                            <RadioButton x:Name="rbPPolarization" Content="P偏振"/>
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+
+                <!-- 預設系統 -->
+                <GroupBox Header="預設光學系統" Margin="0,5">
+                    <StackPanel Margin="10">
+                        <ComboBox x:Name="cbPresetSystems" SelectionChanged="cbPresetSystems_SelectionChanged">
+                            <ComboBoxItem Content="預設測試案例" IsSelected="True"/>
+                            <ComboBoxItem Content="標準驗證案例"/>
+                            <ComboBoxItem Content="MgF2 抗反射鍍膜"/>
+                            <ComboBoxItem Content="TiO2 高折射率膜"/>
+                            <ComboBoxItem Content="SiO2 低折射率膜"/>
+                        </ComboBox>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- 控制按鈕 -->
+                <GroupBox Header="控制" Margin="0,5">
+                    <UniformGrid Columns="2" Margin="10">
+                        <Button x:Name="btnCalculate" Content="計算" Click="btnCalculate_Click" 
+                                Background="LightBlue" FontWeight="Bold" Margin="2" Padding="5"/>
+                        <Button x:Name="btnClear" Content="清除" Click="btnClear_Click" Margin="2" Padding="5"/>
+                        <Button x:Name="btnCopyResults" Content="複製結果" Click="btnCopyResults_Click" Margin="2" Padding="5"/>
+                        <Button x:Name="btnRunTests" Content="執行測試" Click="btnRunTests_Click" Margin="2" Padding="5"/>
+                    </UniformGrid>
+                </GroupBox>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 第一個GridSplitter -->
+        <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="LightGray"/>
+        
+        <!-- 中間結果摘要區域 -->
+        <GroupBox Grid.Column="2" Header="計算結果摘要" Margin="5">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <!-- 快速結果摘要 -->
+                <Grid Grid.Row="0" Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Label Grid.Row="0" Grid.Column="0" Content="反射率:" FontWeight="Bold"/>
+                    <Label Grid.Row="0" Grid.Column="1" x:Name="lblReflectance" Content="--" Foreground="Red"/>
+
+                    <Label Grid.Row="1" Grid.Column="0" Content="穿透率:" FontWeight="Bold"/>
+                    <Label Grid.Row="1" Grid.Column="1" x:Name="lblTransmittance" Content="--" Foreground="Green"/>
+
+                    <Label Grid.Row="2" Grid.Column="0" Content="吸收率:" FontWeight="Bold"/>
+                    <Label Grid.Row="2" Grid.Column="1" x:Name="lblAbsorbance" Content="--" Foreground="Blue"/>
+
+                    <Label Grid.Row="3" Grid.Column="0" Content="能量守恆:" FontWeight="Bold"/>
+                    <Label Grid.Row="3" Grid.Column="1" x:Name="lblEnergyConserved" Content="--"/>
+                    
+                    <!-- 進度指示器 -->
+                    <Label Grid.Row="4" Grid.Column="0" Content="進度:" FontWeight="Bold"/>
+                    <ProgressBar Grid.Row="4" Grid.Column="1" x:Name="progressCalculation" Height="20" Margin="5,2"/>
+                    
+                    <!-- 狀態顯示 -->
+                    <Label Grid.Row="5" Grid.Column="0" Content="狀態:" FontWeight="Bold"/>
+                    <Label Grid.Row="5" Grid.Column="1" x:Name="lblCalculationStatus" Content="就緒"/>
+                </Grid>
+                
+                <!-- 視圖模式切換 -->
+                <GroupBox Grid.Row="1" Header="視圖選項" Margin="10">
+                    <StackPanel Margin="5">
+                        <Label Content="顯示模式:" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <RadioButton x:Name="rbSimpleView" Content="簡潔模式" IsChecked="True" Margin="5,2"/>
+                        <RadioButton x:Name="rbDetailedView" Content="詳細模式" Margin="5,2"/>
+                        <RadioButton x:Name="rbFormulaView" Content="公式模式" Margin="5,2"/>
+                        <RadioButton x:Name="rbChartView" Content="圖表模式" Margin="5,2"/>
+                        <Separator Margin="0,10"/>
+                        <CheckBox x:Name="chkExpandAll" Content="展開所有步驟" Margin="5,2"/>
+                        <CheckBox x:Name="chkShowFormulas" Content="顯示公式" Margin="5,2"/>
+                        <CheckBox x:Name="chkHighlightValues" Content="數值高亮" IsChecked="True" Margin="5,2"/>
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
+        </GroupBox>
+        
+        <!-- 第二個GridSplitter -->
+        <GridSplitter Grid.Column="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="LightGray"/>
+        
+        <!-- 右側詳細過程區域 -->
+        <GroupBox Grid.Column="4" Header="詳細計算過程" Margin="5">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- 計算步驟樹狀結構顯示 -->
+                <TreeView Grid.Row="0" x:Name="treeViewSteps" 
+                          FontFamily="Consolas" FontSize="11"
+                          Background="White"
+                          Margin="5">
+                    <TreeView.Resources>
+                        <!-- 計算步驟模板 -->
+                        <HierarchicalDataTemplate DataType="{x:Type models:CalculationStep}" ItemsSource="{Binding CombinedItems}">
+                            <StackPanel Orientation="Vertical">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <!-- 狀態圖示 -->
+                                    <TextBlock Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Center"
+                                              Text="{Binding Status, Converter={StaticResource StatusToIconConverter}}"
+                                              Foreground="{Binding Status, Converter={StaticResource StatusToColorConverter}}"/>
+                                    
+                                    <!-- 步驟標題 -->
+                                    <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    
+                                    <!-- 進度條 -->
+                                    <ProgressBar Grid.Column="2" Width="50" Height="10" Value="{Binding Progress}" 
+                                                Margin="10,0,5,0" VerticalAlignment="Center"
+                                                Visibility="{Binding Status, Converter={StaticResource StatusToProgressVisibilityConverter}}"/>
+                                    
+                                    <!-- 計算時間 -->
+                                    <TextBlock Grid.Column="3" Text="{Binding Duration, StringFormat='{}{0:mm\\:ss\\.fff}'}" 
+                                              FontSize="9" Foreground="Gray" VerticalAlignment="Center"
+                                              Visibility="{Binding Status, Converter={StaticResource StatusToTimeVisibilityConverter}}"/>
+                                </Grid>
+                            </StackPanel>
+                        </HierarchicalDataTemplate>
+                        
+                        <!-- 計算結果模板 -->
+                        <DataTemplate DataType="{x:Type models:CalculationResult}">
+                            <Grid Margin="20,1,0,1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <TextBlock Grid.Column="0" Text="{Binding Name}" FontFamily="Consolas" 
+                                          Foreground="DarkBlue" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="=" FontFamily="Consolas" 
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="{Binding FormattedValue}" FontFamily="Consolas" 
+                                          FontWeight="Bold" Foreground="DarkGreen" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="{Binding Unit}" FontFamily="Consolas" 
+                                          FontSize="10" Foreground="Gray" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                            </Grid>
+                        </DataTemplate>
+                    </TreeView.Resources>
+                    
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem">
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
+                            <Setter Property="Margin" Value="0,2"/>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                </TreeView>
+                
+                <!-- 傳統文字顯示（備用） -->
+                <TextBox Grid.Row="0" x:Name="txtResults" 
+                         FontFamily="Consolas" FontSize="10"
+                         IsReadOnly="True" 
+                         VerticalScrollBarVisibility="Auto" 
+                         HorizontalScrollBarVisibility="Auto"
+                         Background="White"
+                         Margin="5"
+                         Visibility="Collapsed"/>
+                
+                <StatusBar Grid.Row="1">
+                    <StatusBarItem>
+                        <TextBlock x:Name="txtStatus" Text="就緒"/>
+                    </StatusBarItem>
+                </StatusBar>
+            </Grid>
+        </GroupBox>
+    </Grid>
+</Window>
