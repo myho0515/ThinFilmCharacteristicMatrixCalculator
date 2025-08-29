@@ -215,5 +215,92 @@ namespace ThinFilmCharacteristicMatrixCalculator
             // 完成驗證測試
             logger.CompleteCalculation();
         }
+
+        /// <summary>
+        /// 計算指定偏振類型的光學結果，支援S、P、AVG三種模式
+        /// </summary>
+        public OpticalResult CalculateWithPolarization(Complex incidentIndex, Complex filmIndex, double thickness,
+            Complex substrateIndex, double wavelength, double incidentAngle, PolarizationType polarizationType)
+        {
+            if (polarizationType == PolarizationType.AVG)
+            {
+                return CalculateAVGPolarization(incidentIndex, filmIndex, thickness, 
+                    substrateIndex, wavelength, incidentAngle);
+            }
+            else
+            {
+                bool isSPolarization = polarizationType == PolarizationType.S;
+                var result = Calculate(incidentIndex, filmIndex, thickness, 
+                    substrateIndex, wavelength, incidentAngle, isSPolarization);
+                result.PolarizationType = polarizationType;
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// 計算AVG偏振（S和P偏振的平均值）
+        /// </summary>
+        private OpticalResult CalculateAVGPolarization(Complex incidentIndex, Complex filmIndex, double thickness,
+            Complex substrateIndex, double wavelength, double incidentAngle)
+        {
+            logger.LogStepHeader("AVG偏振計算 - S和P偏振平均");
+            
+            // 計算S偏振結果
+            logger.LogStepHeader("子計算: S偏振");
+            var sResult = Calculate(incidentIndex, filmIndex, thickness, 
+                substrateIndex, wavelength, incidentAngle, true);
+            sResult.PolarizationType = PolarizationType.S;
+            
+            logger.LogCalculation("S偏振 - 反射率", sResult.Reflectance);
+            logger.LogCalculation("S偏振 - 穿透率", sResult.Transmittance);
+            logger.LogCalculation("S偏振 - 吸收率", sResult.Absorbance);
+            
+            // 計算P偏振結果
+            logger.LogStepHeader("子計算: P偏振");
+            var pResult = Calculate(incidentIndex, filmIndex, thickness, 
+                substrateIndex, wavelength, incidentAngle, false);
+            pResult.PolarizationType = PolarizationType.P;
+            
+            logger.LogCalculation("P偏振 - 反射率", pResult.Reflectance);
+            logger.LogCalculation("P偏振 - 穿透率", pResult.Transmittance);
+            logger.LogCalculation("P偏振 - 吸收率", pResult.Absorbance);
+            
+            // 計算平均值
+            logger.LogStepHeader("AVG計算: 平均值");
+            double avgR = (sResult.Reflectance + pResult.Reflectance) / 2.0;
+            double avgT = (sResult.Transmittance + pResult.Transmittance) / 2.0;
+            double avgA = (sResult.Absorbance + pResult.Absorbance) / 2.0;
+            
+            logger.LogCalculation("AVG - 反射率", avgR);
+            logger.LogCalculation("AVG - 穿透率", avgT);
+            logger.LogCalculation("AVG - 吸收率", avgA);
+            
+            // 檢查平均值的能量守恆
+            bool avgEnergyConserved = Math.Abs(avgR + avgT + avgA - 1.0) < 1e-6;
+            logger.LogEnergyConservation(avgEnergyConserved, avgR + avgT + avgA);
+            
+            // 創建AVG結果
+            var avgResult = new OpticalResult
+            {
+                Reflectance = avgR,
+                Transmittance = avgT,
+                Absorbance = avgA,
+                ReflectionCoefficient = new Complex((sResult.ReflectionCoefficient.Real + pResult.ReflectionCoefficient.Real) / 2,
+                                                   (sResult.ReflectionCoefficient.Imaginary + pResult.ReflectionCoefficient.Imaginary) / 2),
+                TransmissionCoefficient = new Complex((sResult.TransmissionCoefficient.Real + pResult.TransmissionCoefficient.Real) / 2,
+                                                     (sResult.TransmissionCoefficient.Imaginary + pResult.TransmissionCoefficient.Imaginary) / 2),
+                Wavelength = wavelength,
+                IncidentAngle = incidentAngle,
+                IsEnergyConserved = avgEnergyConserved,
+                PolarizationType = PolarizationType.AVG,
+                SPolarizationResult = sResult,
+                PPolarizationResult = pResult
+            };
+            
+            logger.LogFinalResults(avgR, avgT, avgA);
+            logger.CompleteCalculation();
+            
+            return avgResult;
+        }
     }
 }
